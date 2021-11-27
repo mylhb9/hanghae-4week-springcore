@@ -1,11 +1,13 @@
 package com.sparta.springcore.controller;
 import com.sparta.springcore.dto.ProductMypriceRequestDto;
 import com.sparta.springcore.dto.ProductRequestDto;
+
 import com.sparta.springcore.entity.Product;
 import com.sparta.springcore.entity.UserRoleEnum;
 import com.sparta.springcore.security.UserDetailsImpl;
 import com.sparta.springcore.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +32,6 @@ public class ProductController {
         Long userId = userDetails.getUser().getId();
 
         Product product = productService.createProduct(requestDto, userId);
-
 // 응답 보내기
         return product;
     }
@@ -46,18 +47,30 @@ public class ProductController {
 
     // 로그인한 회원이 등록한 관심 상품 조회
     @GetMapping("/api/products")
-    public List<Product> getProducts(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-// 로그인 되어 있는 회원 테이블의 ID
+    public Page<Product> getProducts(
+            @RequestParam("page") int page,
+            @RequestParam("size") int size,
+            @RequestParam("sortBy") String sortBy,
+            @RequestParam("isAsc") boolean isAsc,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        //로그인 되어있는 테이블의 아이디
         Long userId = userDetails.getUser().getId();
-
-        return productService.getProducts(userId);
+        //클라이언트의 page는 1부터 시작하고 서버의 page는 0부터 시작하기 때문에 -1을 해서 값을 맞춰줘야한다.
+        page = page - 1;
+        return productService.getProducts(userId, page, size, sortBy, isAsc);
     }
 
     // (관리자용) 전체 상품 조회
     @Secured(UserRoleEnum.Authority.ADMIN)
     @GetMapping("/api/admin/products")
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public Page<Product> getAllProducts(
+            @RequestParam("page") int page,
+            @RequestParam("size") int size,
+            @RequestParam("sortBy") String sortBy,
+            @RequestParam("isAsc") boolean isAsc
+    ) {
+        page = page -1;
+        return productService.getAllProducts(page, size, sortBy, isAsc);
     }
-
 }
